@@ -131,14 +131,15 @@ def whole_program(parser_str_file_csv=parser_function()):
               '\n-------------------------------------------------------------------------------------\n')
         sys.exit(1)
     try:
-        with (open(args.file, "r+") as file_test_csv):
+        with (open(args.file, "r") as file_test_csv):
             reader_csv = csv.reader(file_test_csv)
             if args.where is not None:
                 reader_csv = filter_where(reader_csv, args)
             if args.aggregate is not None:
                 reader_csv = filter_aggregate(reader_csv, args)
             # Схема таблицы для дальнейшего отображения
-            return tabulate(reader_csv, tablefmt='grid')
+            return tabulate(list(reader_csv), tablefmt='grid')
     except FileNotFoundError:
-        return print("\nВы вели не верный аргумент - путь к файлу CSV.")
+        print("\nВы вели не верный аргумент - путь к файлу CSV.")
+        sys.exit(1)
 print(whole_program())
