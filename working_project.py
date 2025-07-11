@@ -12,12 +12,12 @@ class ParserMyClass(argparse.ArgumentParser):
 
 # Функция которая парсит аргументы командной строки и
 # возвращает объект с данными, соответствующими переданным аргументам.
-def parser_function(args=None):
+def parser_function(args_for_test=None):
     parser = ParserMyClass()
     parser.add_argument('--file', type=str, help='Введите путь до файла CSV')
     parser.add_argument('--where', type=str, help='Введите параметр --where, например "brand=apple"')
     parser.add_argument('--aggregate', type=str, help='Введите параметр --aggregate, например "brand=min"')
-    return parser.parse_args(args)
+    return parser.parse_args(args_for_test)
 
 # Функция, которая читает и дробит аргументы параметров --where и --aggregate на отдельные значения
 def filter_str_parameter(where_str):
@@ -46,10 +46,11 @@ def output_parameters(reader_file_csv, argparse_parameter):
         sys.exit(1)
     index_ = first_str_reader_csv.index(f_column)
     return [f_column, f_value, f_sign, index_, first_str_reader_csv]
-# Функция, которая выводит данные для создания таблицы,
-# исключая те строки в столбцах которых отсутствует значение аргумента параметра  --where
+# Функция, которая выводит данные для создания таблицы.
+# Исключает те строки в столбцах которых отсутствует значение аргумента параметра --where
+def filter_where(reader_file_csv, args):
     reader_file_csv = iter(reader_file_csv)
-    list_parameters = output_parameters(reader_file_csv, parser_function().where)
+    list_parameters = output_parameters(reader_file_csv, args.where)
     f_column, f_value, f_sign, index_column, first_str_reader_file_csv = list_parameters
     iter_reader_file_csv_v2, iter_reader_file_csv = itertools.tee(reader_file_csv)
     number_hits = 0
@@ -72,9 +73,9 @@ def output_parameters(reader_file_csv, argparse_parameter):
     return rows_table
 
 # Функция, которая проводит агрегацию табличных данных объявленного столбца
-def filter_aggregate(reader_file_csv):
+def filter_aggregate(reader_file_csv, args):
     reader_file_csv = iter(reader_file_csv)
-    list_parameters = output_parameters(reader_file_csv, parser_function().aggregate)
+    list_parameters = output_parameters(reader_file_csv, args.aggregate)
     f_column, f_value, f_sign, index_column, first_str_reader_csv = list_parameters
     iter_reader_file_csv_v2, iter_reader_file_csv = itertools.tee(reader_file_csv)
     str_iter_reader_file_csv_v2 = next(iter(iter_reader_file_csv_v2), None)
@@ -105,37 +106,37 @@ def filter_aggregate(reader_file_csv):
         max_ = max(result)
         return reader_csv_lambda("max", max_)
 
-if parser_function().file is None:
-    print('\n-------------------------------------------------------------------------------------\n'
-          '\n                         Инструкция запуска скрипта:\n'
-          '\n Скрипт использует такие параметры:\n'
-          '\n --file      =     Здесь необходимо ввести путь до файла CSV.\n'
-          '\n --where     =     Введите параметр фильтра, например: "brand=samsung";\n'
-          '                   Название параметра должно соответствовать названию\n'
-          '                   одного из столбцов таблицы, где производится фильтрация;\n'
-          '                   Знак сравнения только "=";\n'
-          '                   Значение параметра может быть любым в пределах выбранного столбца.\n'
-          '\n --aggregate =     Введите параметр агрегации, например: "price=min";\n'
-          '                   Название параметра должно соответствовать названию\n'
-          '                   столбца, где присутствуют исключительно числа или цифры,\n'
-          '                   в том числе могут быть значения с плавающей точкой;\n'
-          '                   Знак сравнения только "=";\n'
-          '                   Значение параметра один из этих вариантов:\n'
-          '\n                   min = Минимальное значение в столбце;\n'
-          '                   max = Максимальное значение в столбце;\n'
-          '                   avg = Среднее значение в столбце.\n'
-          '\n-------------------------------------------------------------------------------------\n')
-    sys.exit(1)
-
 # Функция запуска скрипта
-def whole_program(parser_str_file_CSV=parser_function()):
+def whole_program(parser_str_file_csv=parser_function()):
+    args = parser_str_file_csv
+    if args.file is None:
+        print('\n-------------------------------------------------------------------------------------\n'
+              '\n                         Инструкция запуска скрипта:\n'
+              '\n Скрипт использует такие параметры:\n'
+              '\n --file      =     Здесь необходимо ввести путь до файла CSV.\n'
+              '\n --where     =     Введите параметр фильтра, например: "brand=samsung";\n'
+              '                   Название параметра должно соответствовать названию\n'
+              '                   одного из столбцов таблицы, где производится фильтрация;\n'
+              '                   Знак сравнения только "=";\n'
+              '                   Значение параметра может быть любым в пределах выбранного столбца.\n'
+              '\n --aggregate =     Введите параметр агрегации, например: "price=min";\n'
+              '                   Название параметра должно соответствовать названию\n'
+              '                   столбца, где присутствуют исключительно числа или цифры,\n'
+              '                   в том числе могут быть значения с плавающей точкой;\n'
+              '                   Знак сравнения только "=";\n'
+              '                   Значение параметра один из этих вариантов:\n'
+              '\n                   min = Минимальное значение в столбце;\n'
+              '                   max = Максимальное значение в столбце;\n'
+              '                   avg = Среднее значение в столбце.\n'
+              '\n-------------------------------------------------------------------------------------\n')
+        sys.exit(1)
     try:
-        with (open(parser_str_file_CSV.file, "r+") as file_test_csv):
+        with (open(args.file, "r+") as file_test_csv):
             reader_csv = csv.reader(file_test_csv)
-            if not parser_str_file_CSV.where is None:
-                reader_csv = filter_where(reader_csv)
-            if not parser_str_file_CSV.aggregate is None:
-                reader_csv = filter_aggregate(reader_csv)
+            if args.where is not None:
+                reader_csv = filter_where(reader_csv, args)
+            if args.aggregate is not None:
+                reader_csv = filter_aggregate(reader_csv, args)
             # Схема таблицы для дальнейшего отображения
             return tabulate(reader_csv, tablefmt='grid')
     except FileNotFoundError:
